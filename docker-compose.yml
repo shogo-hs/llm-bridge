@@ -1,0 +1,33 @@
+version: '3'
+
+services:
+  # Ollamaサービス - ローカルLLMモデルを実行
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+  # LiteLLM Proxyサービス - 統一インターフェースを提供
+  litellm:
+    build:
+      context: ./litellm_proxy
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    container_name: litellm
+    ports:
+      - "8000:8000"
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_API_BASE=http://ollama:11434
+      - PORT=8000
+      - HOST=0.0.0.0
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
