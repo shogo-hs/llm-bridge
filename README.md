@@ -8,6 +8,8 @@
 - **LiteLLM Proxy**: 異なるLLMへの統一インターフェースを提供
 - **管理API**: モデルのダウンロードと設定管理のためのRESTful API
 
+![アーキテクチャ図](./assets/llm-bridge-architecture.svg)
+
 ## セットアップ手順
 
 ### 1. 前提条件
@@ -54,67 +56,47 @@ GPU版を使用するには、ホストマシンに以下のものが必要で�
 - NVIDIA Driverのインストール
 - NVIDIA Container Toolkit（nvidia-docker2）のインストール
 
-### 4. モデルのダウンロード
+### 4. モデルの管理
 
-モデルを追加するには、以下の方法があります：
-
-#### 4.1 管理API経由で追加（最も簡単）
-
-RESTful APIを使用してモデルを追加できます：
+#### モデルのダウンロード
 
 ```bash
-# モデルをダウンロードして設定に追加
+# モデルをダウンロード（例：軽量モデルsmollm2）
 curl -X POST "http://localhost:9999/models/download" \
-  -F "model_path=hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF"
-
-# カスタム名でモデルを追加
-curl -X POST "http://localhost:9999/models/download" \
-  -F "model_path=hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF" \
-  -F "model_name=ELYZA-Japanese"
-
-# ダウンロードせずに設定のみ更新
-curl -X POST "http://localhost:9999/models/config" \
-  -F "model_name=ELYZA-Japanese" \
-  -F "model_path=hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF"
+  -H "Content-Type: application/json" \
+  -d '{"model_path": "smollm2:135m"}'
 ```
 
-利用可能なモデルの一覧を取得：
+#### モデルの追加・切り替え
+
+単一の統合エンドポイントでモデルの追加と切り替えができます。
 
 ```bash
-curl -X GET "http://localhost:9999/models"
+# 新しいモデルを追加
+curl -X POST "http://localhost:9999/models/manage" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model_name": "smollm-tiny", 
+    "provider_model": "ollama/smollm2:135m", 
+    "no_restart": false
+  }'
 ```
 
-#### 4.2 スクリプトによる追加
+> **注意**: provider_model は必ず「プロバイダー/モデル名」の形式で指定する必要があります（例: ollama/phi3, openai/gpt-4）。
 
-コマンドラインスクリプトを使用してモデルを追加することもできます：
+#### モデルの一覧取得
 
 ```bash
-# モデルをダウンロードして設定に追加
-python add_model.py hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF
-
-# カスタム名でモデルを追加
-python add_model.py hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF --name "ELYZA-Japanese"
-
-# ダウンロードをスキップして設定のみ更新
-python add_model.py hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF --skip-download
-
-# コンテナの再起動をスキップ
-python add_model.py hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF --no-restart
+curl -X GET "http://localhost:9999/models" \
+  -H "accept: application/json"
 ```
 
-#### 4.3 手動での追加
-
-もしくは従来通り手動で行うこともできます：
+#### 現在の設定を確認
 
 ```bash
-# Dockerコンテナに入る
-docker exec -it ollama bash
-
-# モデルをダウンロード（例：ELYZA-JPのLlama 3モデル）
-ollama run hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF
+curl -X GET "http://localhost:9999/config" \
+  -H "accept: application/json"
 ```
-
-その後、`litellm_proxy/config.yaml`ファイルを編集してモデルを追加します。
 
 ### 5. モデルのテスト
 
@@ -122,7 +104,7 @@ ollama run hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF
 
 ```bash
 # モデルを指定してテスト実行
-python run_llm.py --model Llama-3-ELYZA-JP-8B-GGUF --prompt "こんにちは、自己紹介してください"
+python run_llm.py --model smollm-tiny --prompt "こんにちは、自己紹介してください"
 ```
 
 ## 使用方法
@@ -140,7 +122,7 @@ response = requests.post(
     "http://localhost:8000/v1/chat/completions",
     headers={"Content-Type": "application/json"},
     json={
-        "model": "Llama-3-ELYZA-JP-8B-GGUF",  # または "gpt-4o-mini"など
+        "model": "smollm-tiny",  # または "gpt-4o-mini"など
         "messages": [{"role": "user", "content": "こんにちは、自己紹介してください"}],
         "temperature": 0.7
     }
@@ -150,44 +132,37 @@ response = requests.post(
 print(json.dumps(response.json(), indent=2, ensure_ascii=False))
 ```
 
-### 管理API
+curlコマンドからの実行例
+```
+curl -s -X POST "http://localhost:8000/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "smollm-tiny",
+    "messages": [{"role": "user", "content": "日本の四季について短く説明してください"}],
+    "temperature": 0.7,
+    "max_tokens": 500
+  }'
+```
 
-モデルの管理に使用できるRESTful APIが提供されています：
+### APIドキュメント
 
-| エンドポイント | メソッド | 説明 |
-|--------------|---------|------|
-| `/models` | GET | 利用可能なモデルの一覧を取得 |
-| `/models/download` | POST | モデルをダウンロードして設定に追加 |
-| `/models/config` | POST | モデルを設定に追加（ダウンロードなし） |
-
-APIは自動生成されたSwagger UIドキュメントでもアクセスできます：
+RESTful APIの詳細なドキュメントには以下のURLからアクセスできます：
 `http://localhost:9999/docs`
 
-### コマンドラインユーティリティ
+### 利用可能なモデルの例
 
-このプロジェクトには、モデル管理を簡単にするための以下のユーティリティが追加されています：
+| モデル名 | 説明 | サイズ | ダウンロードコマンド |
+|---------|------|-------|-------------------|
+| smollm2:135m | 最小サイズのSmolLM2モデル | 約135MB | `{"model_path": "smollm2:135m"}` |
+| smollm2:360m | 中間サイズのSmolLM2モデル | 約360MB | `{"model_path": "smollm2:360m"}` |
+| smollm2 | 標準サイズのSmolLM2モデル | 約1.7GB | `{"model_path": "smollm2"}` |
+| tinyllama | 小さいLlamaモデル | 約1.1GB | `{"model_path": "tinyllama"}` |
+| phi2 | Microsoftの軽量モデル | 約2.7GB | `{"model_path": "phi"}` |
+| neural-chat:7b | Intelの軽量チャットモデル | 約4GB | `{"model_path": "neural-chat:7b"}` |
 
-- **add_model.py**: モデルのダウンロードと設定への追加を一度に行う統合スクリプト
-- **download_model.py**: Ollamaモデルをダウンロードする単独スクリプト
-- **add_model_to_config.py**: 設定ファイルにモデルを追加する単独スクリプト
+### 注意：Ollamaモデルは常に1つだけ
 
-### 設定ファイルの手動編集
-
-設定ファイルを直接編集することもできます：
-
-```yaml
-model_list:
-  - model_name: 新しいモデル名
-    litellm_params:
-      model: "ollama/新しいモデルのパス"
-      api_base: "http://ollama:11434"
-```
-
-編集後、LiteLLM Proxyを再起動してください：
-
-```bash
-docker-compose restart litellm
-```
+このシステムでは、設計上、常に1つのOllamaモデルだけがアクティブになります。新しいOllamaモデルを追加すると、以前のOllamaモデルは設定から自動的に削除されます。これにより、リソース管理が効率化され、モデル切り替えが簡単になります。
 
 ## トラブルシューティング
 
@@ -199,3 +174,25 @@ docker-compose restart litellm
   - GPUが認識されているか確認：`nvidia-smi`
   - NVIDIA Container Toolkitが正しくインストールされているか確認：`docker info | grep -i nvidia`
   - GPU版を起動後、`docker exec -it ollama nvidia-smi`でOllamaコンテナ内からGPUが見えるか確認
+
+### よくあるエラー
+
+1. **プロバイダフォーマットエラー**: `provider_model`を指定する際は、必ず「プロバイダー/モデル名」の形式（例: ollama/phi3）で指定してください。
+
+   ```json
+   {"detail": "provider_modelはプロバイダー/モデル名 の形式で指定してください（例: ollama/phi3, openai/gpt-4）"}
+   ```
+
+2. **モデルが見つからないエラー**: 切り替えようとしているモデルが設定に存在しない場合に発生します。
+
+   ```json
+   {"detail": "モデル ○○○ は設定に存在しません"}
+   ```
+
+3. **サポートされていないモデル形式エラー**: Ollamaがサポートしていないモデル形式を指定した場合：
+
+   ```
+   {"detail":"エラーが発生しました（exit code: 1）\n出力:\npulling manifest... Repository is not GGUF or is not compatible with llama.cpp\n"}
+   ```
+   
+   このエラーが出た場合は、別のモデルを試してください。特に`smollm2:135m`は非常に軽量で、多くの環境で動作します。

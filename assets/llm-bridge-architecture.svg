@@ -1,0 +1,77 @@
+<svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景と枠 -->
+  <rect x="0" y="0" width="800" height="600" fill="#f8f9fa" stroke="#dee2e6" stroke-width="2" />
+  
+  <!-- タイトル -->
+  <text x="400" y="40" font-family="Arial" font-size="24" text-anchor="middle" font-weight="bold">LLM統一インターフェース環境アーキテクチャ</text>
+  
+  <!-- Docker Compose環境 -->
+  <rect x="100" y="70" width="580" height="380" fill="#e9ecef" stroke="#6c757d" stroke-width="2" stroke-dasharray="5,5" rx="10" />
+  <text x="390" y="90" font-family="Arial" font-size="14" text-anchor="middle" font-weight="bold">Docker Compose Environment</text>
+  
+  <!-- Ollamaコンテナ -->
+  <rect x="150" y="150" width="160" height="120" fill="#d1e7dd" stroke="#198754" stroke-width="2" rx="5" />
+  <text x="230" y="170" font-family="Arial" font-size="16" text-anchor="middle" font-weight="bold">Ollama</text>
+  <text x="230" y="195" font-family="Arial" font-size="12" text-anchor="middle">ローカルLLM実行</text>
+  <text x="230" y="215" font-family="Arial" font-size="12" text-anchor="middle">Port: 11434</text>
+  <text x="230" y="235" font-family="Arial" font-size="12" text-anchor="middle">GPU対応</text>
+  <text x="230" y="255" font-family="Arial" font-size="10" text-anchor="middle">Volume: ollama_data</text>
+  
+  <!-- LiteLLMコンテナ -->
+  <rect x="470" y="150" width="160" height="120" fill="#cfe2ff" stroke="#0d6efd" stroke-width="2" rx="5" />
+  <text x="550" y="170" font-family="Arial" font-size="16" text-anchor="middle" font-weight="bold">LiteLLM Proxy</text>
+  <text x="550" y="195" font-family="Arial" font-size="12" text-anchor="middle">統一LLMインターフェース</text>
+  <text x="550" y="215" font-family="Arial" font-size="12" text-anchor="middle">Port: 8000</text>
+  <text x="550" y="235" font-family="Arial" font-size="12" text-anchor="middle">OpenAI互換API</text>
+  <text x="550" y="255" font-family="Arial" font-size="10" text-anchor="middle">config.yaml</text>
+  
+  <!-- 外部サービス - Docker環境の外側に配置 -->
+  <rect x="720" y="180" width="70" height="60" fill="#fff3cd" stroke="#ffc107" stroke-width="2" rx="5" />
+  <text x="755" y="205" font-family="Arial" font-size="10" text-anchor="middle" font-weight="bold">外部LLM</text>
+  <text x="755" y="220" font-family="Arial" font-size="8" text-anchor="middle">サービス</text>
+  <text x="755" y="235" font-family="Arial" font-size="7" text-anchor="middle">(OpenAI等)</text>
+  
+  <!-- APIコンテナ -->
+  <rect x="320" y="300" width="160" height="120" fill="#f8d7da" stroke="#dc3545" stroke-width="2" rx="5" />
+  <text x="400" y="320" font-family="Arial" font-size="16" text-anchor="middle" font-weight="bold">LLM-Bridge API</text>
+  <text x="400" y="345" font-family="Arial" font-size="12" text-anchor="middle">モデル管理API</text>
+  <text x="400" y="365" font-family="Arial" font-size="12" text-anchor="middle">Port: 9999</text>
+  <text x="400" y="385" font-family="Arial" font-size="12" text-anchor="middle">Docker API接続</text>
+  <text x="400" y="405" font-family="Arial" font-size="10" text-anchor="middle">設定ファイル管理</text>
+  
+  <!-- ユーザー -->
+  <rect x="320" y="500" width="160" height="60" fill="#ffffff" stroke="#6c757d" stroke-width="2" rx="5" />
+  <text x="400" y="530" font-family="Arial" font-size="16" text-anchor="middle" font-weight="bold">ユーザーアプリケーション</text>
+  <text x="400" y="550" font-family="Arial" font-size="10" text-anchor="middle">Pythonスクリプト, Web UI, CLI等</text>
+  
+  <!-- 接続線 - 水平・垂直線を優先 -->
+  <!-- 1. Ollama to LiteLLM -->
+  <path d="M 310 210 L 470 210" stroke="#495057" stroke-width="2" fill="none" />
+  <polygon points="460,205 470,210 460,215" fill="#495057" />
+  <text x="390" y="195" font-family="Arial" font-size="10" text-anchor="middle">API通信</text>
+  
+  <!-- 2. LLM-Bridge API to Ollama -->
+  <path d="M 320 360 L 230 360 L 230 270" stroke="#495057" stroke-width="2" fill="none" />
+  <polygon points="225,280 230,270 235,280" fill="#495057" />
+  <text x="250" y="345" font-family="Arial" font-size="10" text-anchor="middle">モデル管理</text>
+  
+  <!-- 3. LLM-Bridge API to LiteLLM -->
+  <path d="M 480 340 L 550 340 L 550 270" stroke="#495057" stroke-width="2" fill="none" />
+  <polygon points="545,280 550,270 555,280" fill="#495057" />
+  <text x="515" y="325" font-family="Arial" font-size="10" text-anchor="middle">設定管理</text>
+  
+  <!-- 4. User to LLM-Bridge API -->
+  <path d="M 400 500 L 400 420" stroke="#495057" stroke-width="2" fill="none" />
+  <polygon points="395,430 400,420 405,430" fill="#495057" />
+  <text x="355" y="460" font-family="Arial" font-size="10" text-anchor="middle">モデル管理</text>
+  
+  <!-- 5. User to LiteLLM -->
+  <path d="M 480 520 L 600 520 L 600 210 L 600 210" stroke="#495057" stroke-width="2" stroke-dasharray="5,5" fill="none" />
+  <polygon points="595,220 600,210 605,220" fill="#495057" />
+  <text x="570" y="505" font-family="Arial" font-size="10" text-anchor="middle">LLM推論リクエスト</text>
+  
+  <!-- 6. LiteLLM to External -->
+  <path d="M 630 210 L 720 210" stroke="#495057" stroke-width="2" stroke-dasharray="5,5" fill="none" />
+  <polygon points="710,205 720,210 710,215" fill="#495057" />
+  <text x="680" y="195" font-family="Arial" font-size="10" text-anchor="middle">外部API連携</text>
+</svg>

@@ -1,7 +1,7 @@
-version: '3'
+version: '2.3'
 
 services:
-  # Ollamaサービス - ローカルLLMモデルを実行（GPU対応版）
+  # Ollamaサービス - ローカルLLMモデルを実行（GPU対応版 - 旧runtime指定形式）
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
@@ -10,15 +10,9 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     restart: unless-stopped
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+    runtime: nvidia  # GPUサポート（Compose 2.3形式）
 
-  # LiteLLM Proxyサービス - 統一インターフェースを提供
+  # LiteLLM Proxyサービス - 異なるLLMプロバイダに共通インターフェースを提供
   litellm:
     build:
       context: ./litellm_proxy
@@ -34,9 +28,11 @@ services:
       - OLLAMA_API_BASE=http://ollama:11434
       - PORT=8000
       - HOST=0.0.0.0
+    volumes:
+      - ./litellm_proxy/config.yaml:/app/config.yaml
     restart: unless-stopped
 
-  # 管理APIサービス - モデルのダウンロードと設定管理を行う
+  # APIサービス - モデルダウンロード・管理
   api:
     build:
       context: .
@@ -48,8 +44,9 @@ services:
       - ollama
       - litellm
     volumes:
-      - .:/app
-      - ollama_data:/root/.ollama:ro
+      - .:/app                              # アプリケーションコード
+      - ollama_data:/root/.ollama:ro        # モデルキャッシュを読み取り専用で共有
+      - /var/run/docker.sock:/var/run/docker.sock  # ← docker CLI利用用
     restart: unless-stopped
 
 volumes:

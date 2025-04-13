@@ -1,22 +1,15 @@
-model_list:
-  - model_name: Llama-3-ELYZA-JP-8B-GGUF
-    litellm_params:
-      model: "ollama/hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF"
-      api_base: "http://ollama:11434"
-  
-  - model_name: gpt-4o-mini
-    litellm_params:
-      model: "openai/gpt-4o-mini"
-
-# ルーティング設定
-router_settings:
-  routing_strategy: "simple-shuffle"
-
-# 環境変数の設定
 environment_variables:
-  OLLAMA_API_BASE: "http://ollama:11434"
-
-# 一般設定
+  OLLAMA_API_BASE: http://ollama:11434
 general_settings:
-  # ペイロードのパラメータをドロップしない
   drop_params: false
+model_list:
+- litellm_params:
+    api_base: http://ollama:11434
+    model: ollama/hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF:latest
+  model_name: elyza
+- litellm_params:
+    model: openai/gpt-4o-mini
+  model_name: gpt-4o-mini
+- litellm_params:
+    model: openai/gpt-4o
+  model_name: gpt-4o
